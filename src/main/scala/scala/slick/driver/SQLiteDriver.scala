@@ -84,6 +84,17 @@ trait SQLiteDriver extends JdbcDriver { driver =>
       case _ =>
     }
 
+    override protected def buildGroupByClause(groupBy: Option[Node]) = building(OtherPart) {
+      groupBy match {
+        /* SQLite doesn't accept integer literals in GROUP BY clauses. Since the
+         * actual type and value of a literal does not matter for this purpose,
+         * we rewrite any literal to an empty string. */
+        case Some(LiteralNode(_)) => b" group by ''"
+        case Some(ProductNode(Seq(LiteralNode(_)))) => b" group by ''"
+        case _ => super.buildGroupByClause(groupBy)
+      }
+    }
+
     override def expr(c: Node, skipParens: Boolean = false): Unit = c match {
       case Library.UCase(ch) => b"upper(!$ch)"
       case Library.LCase(ch) => b"lower(!$ch)"

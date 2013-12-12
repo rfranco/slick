@@ -112,13 +112,15 @@ class ConvertToComprehensions extends Phase {
       val newBy = by.replace({ case r @ Ref(f) if f == fromGen => Ref(gen).nodeTyped(r.nodeType) }, keepType = true)
       logger.debug("Replacing simple groupBy selection in:", sel)
       val newSel = sel.replace({
-        //case a @ Apply(fs, Seq(b @ Bind(s1, Select(Ref(gen2), ElementSymbol(2)), Pure(ProductOfCommonPaths(s2, rests), _))))
-        case a @ Apply(fs, Seq(b @ Comprehension(Seq((s1, Select(Ref(gen2), ElementSymbol(2)))), Nil, None, Nil, Some(Pure(ProductOfCommonPaths(s2, rests), _)), None, None)))
-          if (s2 == s1) && (gen2 == gen) =>
-          Apply(if(fs == Library.CountAll) Library.Count else fs, Seq(FwdPath(gen :: rests.head).nodeTyped(b.nodeType)))(a.nodeType)
-        case a @ Apply(fs, Seq(b @ Comprehension(Seq((s1, Select(Ref(gen2), ElementSymbol(2)))), Nil, None, Nil, Some(Pure(FwdPath(s2 :: rest), _)), None, None)))
-          if (s2 == s1) && (gen2 == gen) =>
-          Apply(if(fs == Library.CountAll) Library.Count else fs, Seq(FwdPath(gen :: rest).nodeTyped(b.nodeType)))(a.nodeType)
+        case a @ Apply(fs, Seq(b @ Comprehension(Seq((s1, Select(Ref(gen2), ElementSymbol(2)))), Nil, None, Nil, Some(Pure(pexpr, _)), None, None))) if gen2 == gen =>
+          val newExpr = pexpr match {
+            case ProductOfCommonPaths(s2, rests) if s2 == s1 =>
+              FwdPath(gen :: rests.head).nodeTyped(b.nodeType)
+            case n => n.replace ({
+              case FwdPath(s2 :: rest) if s2 == s1 => FwdPath(gen :: rest)
+            }, keepType = true).nodeTyped(b.nodeType)
+          }
+          Apply(if(fs == Library.CountAll) Library.Count else fs, Seq(newExpr))(a.nodeType)
         case ca @ Library.CountAll(Select(Ref(gen2), ElementSymbol(2))) if gen2 == gen =>
           Library.Count.typed(ca.nodeType, LiteralNode(1))
         case FwdPath(gen2 :: ElementSymbol(idx) :: rest) if gen2 == gen && (idx == 1 || idx == 2) =>
