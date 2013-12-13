@@ -114,7 +114,7 @@ object SourceCodeGenerator{
         driver.simple.Database
           .forURL(url, driver = jdbcDriver)
           .withSession{ implicit session =>
-            (new SourceCodeGenerator(driver.model)).writeToFile(slickDriver,outputFolder,pkg)
+            (new SourceCodeGenerator(driver.createModel)).writeToFile(slickDriver,outputFolder,pkg)
           }
       }
       case _ => {

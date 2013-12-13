@@ -29,12 +29,12 @@ object CodeGeneratorTest {
       object Tables extends Tables(driver)
       import Tables._
       import Tables.profile.simple._
-      val ddl = posts.ddl ++ categories.ddl ++ typeTest.ddl ++ large.ddl ++ `null`.ddl ++ X.ddl
+      val ddl = posts.ddl ++ categories.ddl ++ typeTest.ddl ++ /*large.ddl ++ */`null`.ddl ++ X.ddl
       //println(ddl.createStatements.mkString("\n"))
       val db = Database.forURL(url=url,driver=jdbcDriver)
       val gen = db.withSession{ implicit session =>
         ddl.create
-        (new SourceCodeGenerator(driver.model(session)){
+        (new SourceCodeGenerator(driver.createModel(session)){
           override def tableName = {
             case n if n.toLowerCase == "null" => "null" // testing null as table name
             case n => super.tableName(n)
@@ -52,11 +52,11 @@ object CodeGeneratorTest {
       "CG2",
       "jdbc:hsqldb:"+testdbLocation+"hsql/supp;shutdown=true",
       HsqldbDriver, "scala.slick.driver.HsqldbDriver", "org.hsqldb.jdbcDriver",
-      config => session => new MySourceCodeGenerator(HsqldbDriver.model(session),config)
+      config => session => new MySourceCodeGenerator(HsqldbDriver.createModel(session),config)
     ),
     Config("CG3", "jdbc:sqlite:"+testdbLocation+"sqlite/sqlite-supp.db",
       SQLiteDriver, "scala.slick.driver.SQLiteDriver", "org.sqlite.JDBC",
-      config => session => new MySourceCodeGenerator(SQLiteDriver.model(session),config)
+      config => session => new MySourceCodeGenerator(SQLiteDriver.createModel(session),config)
     ),
     new H2Config("CG4", Seq("create-fk-1.sql")),
     new H2Config("CG5", Seq("create-fk-2.sql")),
@@ -72,7 +72,7 @@ object CodeGeneratorTest {
     ),
     new H2Config("CG6", Seq("create-ainc.sql")),
     new H2Config("CG7", Seq("create.sql","populate.sql"),
-      config => session => new MySourceCodeGenerator(H2Driver.model(session),config){
+      config => session => new MySourceCodeGenerator(H2Driver.createModel(session),config){
         override def entityName = {
           case "COFFEES" => "Coff"
           case other => super.entityName(other)
@@ -85,7 +85,7 @@ object CodeGeneratorTest {
       }
     ),
     new H2Config("CG8", Seq("create-simple.sql"),
-      config => session => new MySourceCodeGenerator(H2Driver.model(session),config){
+      config => session => new MySourceCodeGenerator(H2Driver.createModel(session),config){
         override def Table = new Table(_){
           override def EntityType = new EntityType{
             override def enabled = false
@@ -111,7 +111,7 @@ val  SimpleA = CustomTyping.SimpleA
       }
     ),
     new H2Config("CG9", Seq("create-ainc.sql"),
-      config => session => new MySourceCodeGenerator(H2Driver.model(session),config){
+      config => session => new MySourceCodeGenerator(H2Driver.createModel(session),config){
         override def Table = new Table(_){
           override def autoIncLastAsOption = true
         }
@@ -144,7 +144,7 @@ val database = Database.forURL(url=""\"$url""\",driver="$jdbcDriver",user="",pas
     objectName: String,
     inits: Seq[String],
     generator: Config => JdbcBackend#Session => SourceCodeGenerator
-      = config => session => new MySourceCodeGenerator(H2Driver.model(session),config)
+      = config => session => new MySourceCodeGenerator(H2Driver.createModel(session),config)
   ) extends Config(
     objectName,
     "jdbc:h2:mem:test3;INIT="+inits.map("runscript from '"+testdbLocation+"h2mem/"+_+"'").mkString("\\;"),
@@ -222,7 +222,7 @@ class Tables(val profile: JdbcProfile){
     def pk = primaryKey("PK", (Int,Long))
   }
   val typeTest = TableQuery[TypeTest]
-
+/* deactivated because of sporadic compilation errors. See https://github.com/slick/slick/pull/541
   // testing table larger 22 columns (code gen round trip does not preserve structure of the * projection or names of mapped to classes)
   case class Part(i1: Int, i2: Int, i3: Int, i4: Int, i5: Int, i6: Int)
   case class Whole(id: Int, p1: Part, p2: Part, p3: Part, p4: Part)
@@ -267,5 +267,6 @@ class Tables(val profile: JdbcProfile){
     })
   }
   val large = TableQuery[Large]
+*/
 }
 
