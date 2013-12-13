@@ -10,7 +10,7 @@ import scala.slick.SlickException
 import scala.slick.jdbc.meta.MTable
 import scala.slick.jdbc.UnitInvoker
 import scala.slick.model.Model
-import scala.slick.jdbc.meta.createModel
+import scala.slick.jdbc.meta.{createModel => jdbcCreateModel}
 
 /**
  * A profile for accessing SQL databases via JDBC.
@@ -63,7 +63,7 @@ trait JdbcProfile extends SqlProfile with JdbcTableComponent
   def getTables: UnitInvoker[MTable] = MTable.getTables()
 
   /** Gets the Slick data model describing this data source */
-  def model(implicit session: Backend#Session): Model = createModel(getTables.list,this)
+  def createModel(implicit session: Backend#Session): Model = jdbcCreateModel(getTables.list,this)
 }
 
 object JdbcProfile {
@@ -76,12 +76,14 @@ object JdbcProfile {
     val returnInsertKey = Capability("jdbc.returnInsertKey")
     /** Can also return non-primary-key columns of inserted row */
     val returnInsertOther = Capability("jdbc.returnInsertOther")
+    /** Can also return non-primary-key columns of inserted row */
+    val createModel = Capability("jdbc.createModel")
 
     /** Supports all JdbcProfile features which do not have separate capability values */
     val other = Capability("jdbc.other")
 
     /** All JDBC capabilities */
-    val all = Set(other, forceInsert, mutable, returnInsertKey, returnInsertOther)
+    val all = Set(other, forceInsert, mutable, returnInsertKey, returnInsertOther, createModel)
   }
 }
 

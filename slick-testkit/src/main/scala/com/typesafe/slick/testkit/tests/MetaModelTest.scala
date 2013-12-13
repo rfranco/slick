@@ -10,7 +10,7 @@ import com.typesafe.slick.testkit.util.{JdbcTestDB, TestkitTest}
 class MetaModelTest extends TestkitTest[JdbcTestDB] {
   import tdb.profile.simple._
 
-  def test {
+  def test { ifCap(jcap.createModel){
     class Categories(tag: Tag) extends Table[(Int, String)](tag, "categories") {
       def id = column[Int]("id", O.PrimaryKey, O.AutoInc)
       def name = column[String]("name")
@@ -31,7 +31,7 @@ class MetaModelTest extends TestkitTest[JdbcTestDB] {
 
     val ddl = posts.ddl ++ categories.ddl
     ddl.create
-    tdb.profile.model.assertConsistency
+    tdb.profile.createModel.assertConsistency
     val tables = tdb.profile.getTables.list
     def createModel(tables:Seq[MTable]): Model = meta.createModel(tables,tdb.profile)
     createModel(tables).assertConsistency
@@ -51,7 +51,7 @@ class MetaModelTest extends TestkitTest[JdbcTestDB] {
     }
 
     // check that the model matches the table classes
-    val model = tdb.profile.model
+    val model = tdb.profile.createModel
     assertEquals( model.tables.toString, 2, model.tables.size )
     ;{
       val categories = model.tables.filter(_.name.table.toUpperCase=="CATEGORIES").head
@@ -73,5 +73,5 @@ class MetaModelTest extends TestkitTest[JdbcTestDB] {
       }
       assert( !posts.columns.exists(_.options.exists(_ == ColumnOption.PrimaryKey)) )
     }
-  }
+  }}
 }
